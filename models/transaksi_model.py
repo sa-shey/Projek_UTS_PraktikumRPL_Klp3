@@ -116,8 +116,44 @@ class TransaksiModel:
                 conn.rollback()
                 print(f"Error Update Transaksi: {e}")
                 conn.close()
+=======
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            if not self.get_transaksi_by_id(id_transaksi):
+>>>>>>> 411d904f46c88c79994121820395850ba7e73ef4
                 return False
-        return False
+            cursor = conn.cursor()
+            query = f"""
+                UPDATE {self.table_name}
+                SET id_pelanggan = %s,
+                    id_paket = %s,
+                    berat_kg = %s,
+                    tgl_terima = %s,
+                    tgl_selesai = %s,
+                    total_biaya = %s,
+                    status_cucian = %s
+                WHERE id_transaksi = %s
+            """
+            val = (
+                id_pelanggan,
+                id_paket,
+                berat_kg,
+                tgl_terima,
+                tgl_selesai,
+                total_biaya,
+                status_cucian,
+                id_transaksi,
+            )
+            cursor.execute(query, val)
+            conn.commit()
+            cursor.close()
+            return True
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Update Transaksi: {e}")
+            return False
 
     def update_status(self, id_transaksi, status_cucian):
         conn = self.db.get_connection()
@@ -135,8 +171,27 @@ class TransaksiModel:
                 conn.rollback()
                 print(f"Error Update Status Transaksi: {e}")
                 conn.close()
+=======
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            if not self.get_transaksi_by_id(id_transaksi):
+>>>>>>> 411d904f46c88c79994121820395850ba7e73ef4
                 return False
-        return False
+            cursor = conn.cursor()
+            query = (
+                f"UPDATE {self.table_name} "
+                "SET status_cucian = %s WHERE id_transaksi = %s"
+            )
+            cursor.execute(query, (status_cucian, id_transaksi))
+            conn.commit()
+            cursor.close()
+            return True
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Update Status Transaksi: {e}")
+            return False
 
     def delete_transaksi(self, id_transaksi):
         conn = self.db.get_connection()

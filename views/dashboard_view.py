@@ -4,14 +4,7 @@ import customtkinter as ctk
 from config.database import Database
 from models.transaksi_model import TransaksiModel
 from models.paket_model import PaketModel
-from views.laundry_view import (
-    WARNA_KARTU,
-    _gaya_tabel,
-    _label,
-    _rp,
-    _tabel,
-    _tombol,
-)
+from views.laundry_view import (WARNA_KARTU, _gaya_tabel, _label, _rp, _tabel, _tombol)
 
 _JUDUL = {"font": ("Segoe UI", 14, "bold"), "anchor": "w"}
 _ABU = {"text_color": "gray", "anchor": "w"}
