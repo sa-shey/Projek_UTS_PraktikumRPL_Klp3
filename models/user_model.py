@@ -1,5 +1,5 @@
 import hashlib
-from mysql.connector import Error
+import mysql.connector
 from config.database import Database
 
 
@@ -28,7 +28,7 @@ class UserModel:
             user = cursor.fetchone()
             cursor.close()
             return user
-        except Error as e:
+        except mysql.connector.Error as e:
             print(f"Error autentikasi: {e}")
             return None
 
@@ -42,7 +42,7 @@ class UserModel:
             ada = cursor.fetchone() is not None
             cursor.close()
             return ada
-        except Error as e:
+        except mysql.connector.Error as e:
             print(f"Error cek username: {e}")
             return False
 
@@ -58,7 +58,7 @@ class UserModel:
             self.conn.commit()
             cursor.close()
             return True
-        except Error as e:
+        except mysql.connector.Error as e:
             print(f"Error register_user: {e}")
             self.conn.rollback()
             return False

@@ -1,12 +1,19 @@
 import sys
+import platform
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
+
 import customtkinter as ctk
+from PIL import Image, ImageTk
 from controller.auth_controller import AuthController
 from views.dashboard_view import DashboardView
 from views.laundry_view import LaundryView, _label, _tombol
+from views.splash_view import SplashScreen
 
 JUDUL = "SIM Laundry - Sistem Informasi Manajemen Operasional Jasa Laundry"
+AKAR_PROYEK = Path(__file__).resolve().parent
+PATH_LOGO_ICO = AKAR_PROYEK / "assets" / "logo.ico"
+PATH_LOGO_PNG = AKAR_PROYEK / "assets" / "logo.png"
 
 # ---------------------------------------------------------------------------
 # Palet mint: hijau kebiruan lembut yang menyiratkan kesegaran.
@@ -25,10 +32,53 @@ MERAH = "#f43f5e"        # tombol hapus
 # ==================================================================
 # UTILITAS
 # ==================================================================
+
+def main() -> None:
+    terapkan_tema()
+    SplashScreen().mainloop()  # Animasi logo tampil di awal
+
+    try:
+        pengguna = buka_jendela_login()
+    except SystemExit:
+        return
+
+    buka_jendela_utama(pengguna["username"], pengguna["role"])
+
 def terapkan_tema() -> None:
     """Mengatur tampilan terang dan tema warna bawaan."""
     ctk.set_appearance_mode("light")
     ctk.set_default_color_theme("blue")
+
+
+def muat_gambar_logo(ukuran: tuple[int, int]) -> ctk.CTkImage | None:
+    """Memuat logo dari assets/logo.ico (atau logo.png) menjadi CTkImage."""
+    path_aktif = PATH_LOGO_ICO if PATH_LOGO_ICO.exists() else PATH_LOGO_PNG
+    if not path_aktif.exists():
+        return None
+    img_pil = Image.open(path_aktif).convert("RGBA")
+    return ctk.CTkImage(light_image=img_pil, dark_image=img_pil, size=ukuran)
+
+
+def pasang_ikon_jendela(jendela: ctk.CTk) -> None:
+    """Memasang logo.ico sebagai ikon window (aman di macOS dan Windows)."""
+    path_aktif = PATH_LOGO_ICO if PATH_LOGO_ICO.exists() else PATH_LOGO_PNG
+    if not path_aktif.exists():
+        return
+    try:
+        if platform.system() == "Windows" and PATH_LOGO_ICO.exists():
+            jendela.iconbitmap(str(PATH_LOGO_ICO))
+        else:
+            ikon_pil = Image.open(path_aktif).convert("RGBA")
+            ikon_tk = ImageTk.PhotoImage(ikon_pil)
+            jendela.wm_iconphoto(True, ikon_tk)
+            jendela._ikon_ref = ikon_tk  # cegah garbage collection
+    except Exception:
+        pass
+
+def tampilkan_splash() -> None:
+    """Menjalankan splash screen animasi sebelum login."""
+    splash = SplashScreen()
+    splash.mainloop()
 
 
 def buka_jendela_login() -> dict:
@@ -59,8 +109,15 @@ def _sidebar(bangunan, pengguna: str, aktif: str):
     sisi.grid_rowconfigure(5, weight=1)
 
     # --- Logo dan nama aplikasi ---
-    _label(sisi, "\U0001F9FA", 0, 0, gaya={"font": ("Segoe UI", 30)},
-           pady=(24, 0))
+    logo_img = muat_gambar_logo((68, 68))
+    if logo_img is not None:
+        lbl_logo = ctk.CTkLabel(sisi, image=logo_img, text="")
+        lbl_logo.image = logo_img  # simpan referensi gambar
+        lbl_logo.grid(row=0, column=0, pady=(24, 2))
+    else:
+        _label(sisi, "\U0001F9FA", 0, 0, gaya={"font": ("Segoe UI", 30)},
+               pady=(24, 0))
+
     _label(sisi, "SIM Laundry", 1, 0,
            gaya={"font": ("Segoe UI", 18, "bold"), "text_color": TEKS},
            pady=(4, 0))
@@ -103,15 +160,12 @@ def _sidebar(bangunan, pengguna: str, aktif: str):
 
 
 def buka_jendela_utama(pengguna: str, role: str = "user") -> None:
-    """Menampilkan jendela utama yang memuat dashboard dan transaksi.
-
-    Parameter role (admin / user) disiapkan untuk pembatasan hak akses
-    (otorisasi) pada tahap berikutnya.
-    """
+    """Menampilkan jendela utama yang memuat dashboard dan transaksi."""
     jendela = ctk.CTk(fg_color=LATAR)
     jendela.title(JUDUL)
     jendela.geometry("1260x780+20+20")
     jendela.minsize(1040, 620)
+    pasang_ikon_jendela(jendela)
 
     _, menu, kartu = _sidebar(jendela, pengguna, "Dashboard")
 
@@ -140,7 +194,6 @@ def buka_jendela_utama(pengguna: str, role: str = "user") -> None:
         tampilan.configure(fg_color=LATAR)
         tampilan.grid(row=0, column=0, sticky="nsew")
 
-    # Tombol muat ulang mengikuti warna tema mint.
     view_dashboard.btn_refresh.configure(fg_color=MINT, hover_color=MINT_GELAP)
     view_transaksi.grid_rowconfigure(1, weight=1)
     view_transaksi.grid_columnconfigure(1, weight=1)
@@ -174,7 +227,11 @@ def main() -> None:
     """Merakit seluruh tampilan lalu menjalankan aplikasi."""
     # 1. Tampilan bertema mint.
     terapkan_tema()
-    # 2. Login lebih dahulu, baru jendela utama.
+
+    # 2. Tampilkan splash screen animasi saat pertama kali dibuka.
+    tampilkan_splash()
+
+    # 3. Login lebih dahulu, baru jendela utama.
     try:
         pengguna = buka_jendela_login()
     except SystemExit:
