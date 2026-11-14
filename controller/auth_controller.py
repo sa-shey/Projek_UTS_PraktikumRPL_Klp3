@@ -2,7 +2,7 @@ import customtkinter as ctk
 import tkinter.messagebox as messagebox
 from models.user_model import UserModel
 from views.login_view import LoginView
-from views.register_view import RegisterView
+import views.register_view
 
 
 class AuthController:
@@ -43,7 +43,7 @@ class AuthController:
     # REGISTRASI
     # ------------------------------------------------------------------
     def buka_registrasi(self):
-        self.register_view = RegisterView(self.root)
+        self.register_view = views.register_view.RegisterView(self.root)
         self.register_view.btn_daftar.configure(command=self.proses_registrasi)
 
     def proses_registrasi(self):

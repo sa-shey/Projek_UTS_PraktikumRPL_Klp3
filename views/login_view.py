@@ -1,5 +1,8 @@
+from pathlib import Path
 import customtkinter as ctk
+from PIL import Image
 from views.laundry_view import _input, _label, _tombol, bind_event
+
 # Warna halaman login.
 PALET = {
     "kartu": "#ffffff",
@@ -10,6 +13,11 @@ PALET = {
     "konsol": "#eff9f6",
     "salah": "#e11d48",
 }
+
+AKAR_PROYEK = Path(__file__).resolve().parent.parent
+PATH_LOGO_ICO = AKAR_PROYEK / "assets" / "logo.ico"
+PATH_LOGO_PNG = AKAR_PROYEK / "assets" / "logo.png"
+
 
 class LoginView(ctk.CTkFrame):
     """Kartu login. Pemeriksaan akun dilakukan oleh AuthController."""
@@ -32,6 +40,14 @@ class LoginView(ctk.CTkFrame):
     # ==================================================================
     # KONSTRUKSI KOMPONEN
     # ==================================================================
+    def _muat_logo(self, ukuran: tuple[int, int]) -> ctk.CTkImage | None:
+        """Memuat logo aplikasi dari folder assets."""
+        path_aktif = PATH_LOGO_ICO if PATH_LOGO_ICO.exists() else PATH_LOGO_PNG
+        if not path_aktif.exists():
+            return None
+        img_pil = Image.open(path_aktif).convert("RGBA")
+        return ctk.CTkImage(light_image=img_pil, dark_image=img_pil, size=ukuran)
+
     def _build_kartu(self) -> None:
         w = self.warna
 
@@ -54,13 +70,22 @@ class LoginView(ctk.CTkFrame):
         # Kolom 1 (judul) yang melar, lencana tetap rata kiri.
         kepala.grid_columnconfigure(1, weight=1)
 
-        # Lencana berisi ikon keranjang, memberi kesan aplikasi laundry.
+        # Lencana berisi logo SIM Laundry.
         lencana = ctk.CTkFrame(kepala, fg_color=w["aksen_muda"],
                                width=56, height=56, corner_radius=16)
         lencana.grid(row=0, column=0, rowspan=2, padx=(16, 0), pady=16)
         lencana.grid_propagate(False)
-        _label(lencana, "\U0001F9FA", 0, 0,
-               gaya={"font": ("Segoe UI", 26)})
+        lencana.grid_rowconfigure(0, weight=1)
+        lencana.grid_columnconfigure(0, weight=1)
+
+        logo_img = self._muat_logo((36, 36))
+        if logo_img is not None:
+            lbl_logo = ctk.CTkLabel(lencana, image=logo_img, text="")
+            lbl_logo.image = logo_img
+            lbl_logo.grid(row=0, column=0)
+        else:
+            _label(lencana, "\U0001F9FA", 0, 0,
+                   gaya={"font": ("Segoe UI", 26)})
 
         _label(kepala, "SIM Laundry", 0, 1,
                gaya={"font": ("Segoe UI", 22, "bold"),
@@ -95,8 +120,6 @@ class LoginView(ctk.CTkFrame):
         _label(kartu, "Password", 5, 0, gaya=judul,
                sticky="ew", padx=28, pady=(0, 4))
 
-        # Kolom sandi dan tombol "Lihat" berdampingan; kolom sandi tetap
-        # melebar sehingga panjangnya sama dengan kolom username.
         bungkus = ctk.CTkFrame(kartu, fg_color="transparent")
         bungkus.grid(row=6, column=0, sticky="ew", padx=28, pady=(0, 6))
         bungkus.grid_columnconfigure(0, weight=1)
@@ -186,7 +209,6 @@ class LoginView(ctk.CTkFrame):
         ke Controller. View tidak lagi memeriksa akun atau menutup jendela;
         itu tugas AuthController (pemisahan tanggung jawab MVC).
         """
-        # Pesan lama dibersihkan agar tidak menumpuk saat mencoba lagi.
         self.label_salah.configure(text="")
 
         if not self.entry_username.get().strip():
@@ -208,7 +230,6 @@ class LoginView(ctk.CTkFrame):
 
 
 if __name__ == "__main__":
-    # Pengujian antarmuka secara mandiri sesuai langkah pada Modul 5.
     ctk.set_appearance_mode("light")
     jendela = ctk.CTk(fg_color="#eff9f6")
     jendela.title("Login - SIM Laundry")
