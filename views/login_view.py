@@ -12,13 +12,16 @@ PALET = {
 }
 
 class LoginView(ctk.CTkFrame):
-    """Kartu login berupa antarmuka statis."""
+    """Kartu login. Pemeriksaan akun dilakukan oleh AuthController."""
 
     def __init__(self, master):
         super().__init__(master, fg_color="transparent")
         self.pengguna_masuk = None
         self.warna = PALET
         self.sandi_terlihat = False
+        # [MODUL VII] Fungsi milik Controller yang dipanggil saat tombol
+        # Masuk ditekan. Diisi oleh AuthController: on_masuk(username, password)
+        self.on_masuk = None
 
         # Kartu dipusatkan dengan satu baris dan satu kolom berbobot penuh.
         self.grid_rowconfigure(0, weight=1)
@@ -126,19 +129,22 @@ class LoginView(ctk.CTkFrame):
                   "font": ("Segoe UI", 14, "bold")},
             sticky="ew", padx=28, pady=(0, 16))
 
-        # --- Kotak informasi: tombol belum terhubung ke Controller ---
+        # --- [MODUL VII] Baris registrasi, menggantikan kotak "Catatan" ---
         info = ctk.CTkFrame(kartu, fg_color=w["konsol"], corner_radius=12)
         info.grid(row=9, column=0, sticky="ew", padx=28, pady=(0, 20))
-        info.grid_columnconfigure(1, weight=1)
+        info.grid_columnconfigure(0, weight=1)
 
-        _label(info, "Catatan", 0, 0,
-               gaya={"font": ("Segoe UI", 11, "bold"),
-                     "text_color": w["teks"], "anchor": "w"},
-               sticky="w", padx=(14, 8), pady=12)
-        _label(info, "akun belum diperiksa, isi apa saja", 0, 1,
-               gaya={"font": ("Consolas", 11), "text_color": w["teks_lunak"],
-                     "anchor": "e"},
-               sticky="e", padx=(8, 14), pady=12)
+        _label(info, "Belum punya akun?", 0, 0,
+               gaya={"font": ("Segoe UI", 12), "text_color": w["teks_lunak"],
+                     "anchor": "w"},
+               sticky="w", padx=(14, 8), pady=10)
+        self.btn_daftar = _tombol(
+            info, "Daftar", None, 0, 1,
+            gaya={"width": 80, "height": 32, "corner_radius": 8,
+                  "fg_color": w["aksen_muda"], "text_color": w["aksen"],
+                  "hover_color": "#99f6e4",
+                  "font": ("Segoe UI", 12, "bold")},
+            padx=(8, 10), pady=8)
 
         # Tekan Enter untuk memproses isian.
         masuk = lambda _e: self._aksi_masuk()          # noqa: E731
@@ -170,13 +176,15 @@ class LoginView(ctk.CTkFrame):
             else self.warna["aksen"],
         )
 
+    def tampilkan_error(self, pesan: str) -> None:
+        """[MODUL VII] Dipanggil Controller untuk menampilkan pesan gagal."""
+        self.label_salah.configure(text=pesan)
+
     def _aksi_masuk(self) -> None:
         """
-        Memeriksa kolom kosong lalu menutup jendela login.
-
-        Username dan password tidak diperiksa terhadap daftar mana pun,
-        karena pemeriksaan itu merupakan pekerjaan Controller yang belum
-        dibuat pada tahap ini. Tombol ini hanya berpindah halaman.
+        Memeriksa kolom kosong, lalu menyerahkan username dan password
+        ke Controller. View tidak lagi memeriksa akun atau menutup jendela;
+        itu tugas AuthController (pemisahan tanggung jawab MVC).
         """
         # Pesan lama dibersihkan agar tidak menumpuk saat mencoba lagi.
         self.label_salah.configure(text="")
@@ -194,9 +202,9 @@ class LoginView(ctk.CTkFrame):
             self.entry_password.focus_set()
             return
 
-        self.pengguna_masuk = self.entry_username.get().strip()
-        # Menutup jendela ini supaya jendela utama dapat dibuka.
-        self.winfo_toplevel().destroy()
+        if self.on_masuk:
+            self.on_masuk(self.entry_username.get().strip(),
+                          self.entry_password.get())
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 import customtkinter as ctk
-from views.login_view import LoginView
+from controller.auth_controller import AuthController
 from views.dashboard_view import DashboardView
 from views.laundry_view import LaundryView, _label, _tombol
 
@@ -31,31 +31,19 @@ def terapkan_tema() -> None:
     ctk.set_default_color_theme("blue")
 
 
-def buka_jendela_login() -> str:
+def buka_jendela_login() -> dict:
     """
-    Menampilkan jendela login lalu mengembalikan nama pengguna.
+    Menampilkan jendela login lewat AuthController.
 
-    Karena tombol masuk belum dihubungkan ke Controller, nama pengguna
-    diambil dari apa yang diketik operator pada kolom username.
+    Mengembalikan dict {id_user, username, role} jika login berhasil.
+    Jika jendela ditutup tanpa login, aplikasi dihentikan.
     """
-    jendela = ctk.CTk(fg_color=LATAR)
-    jendela.title("Login - SIM Laundry")
-    jendela.geometry("880x620")
-    jendela.resizable(False, False)
+    pengguna = AuthController().run()
 
-    view = LoginView(jendela)
-    view.grid(row=0, column=0, sticky="nsew", padx=16, pady=16)
-    jendela.grid_rowconfigure(0, weight=1)
-    jendela.grid_columnconfigure(0, weight=1)
-
-    jendela.mainloop()
-
-    # Bila jendela ditutup tanpa mengisi nama pengguna, aplikasi
-    # dihentikan.
-    if getattr(view, "pengguna_masuk", None) is None:
+    if pengguna is None:
         raise SystemExit
 
-    return view.pengguna_masuk
+    return pengguna
 
 
 # ==================================================================
@@ -114,8 +102,12 @@ def _sidebar(bangunan, pengguna: str, aktif: str):
     return sisi, menu, kartu
 
 
-def buka_jendela_utama(pengguna: str) -> None:
-    """Menampilkan jendela utama yang memuat dashboard dan transaksi."""
+def buka_jendela_utama(pengguna: str, role: str = "user") -> None:
+    """Menampilkan jendela utama yang memuat dashboard dan transaksi.
+
+    Parameter role (admin / user) disiapkan untuk pembatasan hak akses
+    (otorisasi) pada tahap berikutnya.
+    """
     jendela = ctk.CTk(fg_color=LATAR)
     jendela.title(JUDUL)
     jendela.geometry("1260x780+20+20")
@@ -188,7 +180,7 @@ def main() -> None:
     except SystemExit:
         return
 
-    buka_jendela_utama(pengguna)
+    buka_jendela_utama(pengguna["username"], pengguna["role"])
 
 
 if __name__ == "__main__":
