@@ -1,4 +1,4 @@
-from datetime import date
+﻿from datetime import date
 
 try:
     from controller.auth_controller import AuthController, ROLE_ADMIN
@@ -11,7 +11,7 @@ from models.paket_model import PaketModel
 from models.transaksi_model import TransaksiModel
 
 STATUS_CUCIAN = ("Antrean", "Proses", "Selesai", "Diambil")
-AKUN = {"atmin": "atmin123"}
+AKUN = {"admin": "admin123"}
 
 
 class LaundryController:
@@ -55,7 +55,7 @@ class LaundryController:
             return True
         if isinstance(self.current_user, dict):
             return self.current_user.get("role") == ROLE_ADMIN
-        return str(self.current_user) in ("atmin", "Admin")
+        return str(self.current_user) in ("admin", "Admin")
 
     def ambil_pelanggan(self):
         data = self.pelanggan_model.get_all_pelanggan()
@@ -315,3 +315,4 @@ class LaundryController:
             return True, f"Selamat datang, {username}!", user
 
         return False, "Username atau password salah.", None
+

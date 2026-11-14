@@ -1,4 +1,4 @@
-from datetime import date
+﻿from datetime import date
 import customtkinter as ctk
 from tkinter import ttk, messagebox
 
@@ -148,65 +148,36 @@ class LaundryView(ctk.CTkFrame):
         form.grid_columnconfigure(2, weight=3)
 
         merah = {"fg_color": "#b3261e", "hover_color": "#8f1e18"}
-        kecil = {"width": 58, "height": 28}
 
         label_kiri("Pelanggan", 0)
         label_kanan("Paket Layanan", 0)
 
-        self.combo_pelanggan = _input(
+        # Input nama pelanggan (teks biasa, tanpa dropdown & tombol Hapus)
+        self.entry_pelanggan = _input(
             form,
-            ctk.CTkComboBox,
+            ctk.CTkEntry,
             1,
             0,
-            gaya={
-                "state": "normal",
-                "values": ["-"],
-                "command": lambda _v: self._isi_kontak(),
-            },
+            gaya={"placeholder_text": "Nama pelanggan"},
             sticky="ew",
-            padx=(10, 4),
-            pady=2,
-        )
-        bind_event(self.combo_pelanggan, "<KeyRelease>", lambda _e: self._isi_kontak())
-
-        self.btn_hapus_pelanggan = _tombol(
-            form,
-            "Hapus",
-            self.hapus_pelanggan_terpilih,
-            1,
-            1,
-            gaya={**kecil, **merah},
-            padx=(0, 12),
+            padx=(10, 12),
             pady=2,
         )
 
+        # Dropdown paket (tanpa tombol +Paket & Hapus)
         self.combo_paket = _input(
             form,
             ctk.CTkComboBox,
             1,
             2,
+            columnspan=3,
             gaya={
                 "state": "readonly",
                 "values": ["-"],
                 "command": lambda _v: self._hitung_total(),
             },
             sticky="ew",
-            padx=(12, 4),
-            pady=2,
-        )
-
-        self.btn_tambah_paket = _tombol(
-            form, "+ Paket", self.tambah_paket_dialog, 1, 3, gaya=kecil, padx=4, pady=2
-        )
-
-        self.btn_hapus_paket = _tombol(
-            form,
-            "Hapus",
-            self.hapus_paket_terpilih,
-            1,
-            4,
-            gaya={**kecil, **merah},
-            padx=(4, 10),
+            padx=(12, 10),
             pady=2,
         )
 
@@ -246,7 +217,7 @@ class LaundryView(ctk.CTkFrame):
             padx=(10, 12),
             pady=2,
         )
-        bind_event(self.entry_berat, "<KeyRelease>", lambda _e: self._hitung_total())
+        self.entry_berat._entry.bind("<KeyRelease>", lambda _e: self._hitung_total())
 
         self.combo_status = _input(
             form,
@@ -459,10 +430,6 @@ class LaundryView(ctk.CTkFrame):
 
     def muat_data_master(self) -> None:
         self.data_pelanggan_db = self._ambil_pelanggan_db()
-        daftar_pelanggan = [p["nama"] for p in self.data_pelanggan_db] or ["-"]
-        self.combo_pelanggan.configure(values=daftar_pelanggan)
-        self.combo_pelanggan.set(daftar_pelanggan[0])
-        self._isi_kontak()
 
         self.data_paket_db = self.paket_model.tampilkan_paket()
         daftar_paket = [p["nama_paket"] for p in self.data_paket_db] or ["-"]
@@ -503,8 +470,8 @@ class LaundryView(ctk.CTkFrame):
         for baris in self.data_transaksi_db:
             if str(baris["id_transaksi"]) != str(id_terpilih):
                 continue
-            self.combo_pelanggan.set(baris["nama_pelanggan"])
-            self._isi_kontak()
+            _isi(self.entry_pelanggan, baris["nama_pelanggan"])
+            self._isi_kontak_dari_nama(baris["nama_pelanggan"])
             self.combo_paket.set(baris["nama_paket"])
             _isi(self.entry_berat, f"{float(baris['berat_kg']):g}")
             _isi(self.entry_terima, str(baris.get("tgl_terima") or ""))
@@ -517,7 +484,7 @@ class LaundryView(ctk.CTkFrame):
     # CREATE: SIMPAN TRANSAKSI BARU
     # ==================================================================
     def simpan_transaksi(self) -> None:
-        nama_pelanggan = self.combo_pelanggan.get().strip()
+        nama_pelanggan = self.entry_pelanggan.get().strip()
         if not nama_pelanggan or nama_pelanggan == "-":
             messagebox.showwarning("Peringatan", "Nama pelanggan tidak boleh kosong.")
             return
@@ -575,61 +542,6 @@ class LaundryView(ctk.CTkFrame):
             )
 
     # ==================================================================
-    # CREATE: TAMBAH PAKET LAYANAN BARU (POP-UP)
-    # ==================================================================
-    def tambah_paket_dialog(self) -> None:
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("Tambah Paket Layanan")
-        dialog.geometry("360x320")
-        dialog.resizable(False, False)
-        dialog.grab_set()
-
-        ctk.CTkLabel(dialog, text="ID Paket (Contoh: PK05)").pack(anchor="w", padx=20, pady=(14, 2))
-        e_id = ctk.CTkEntry(dialog, placeholder_text="PK05")
-        e_id.pack(fill="x", padx=20)
-
-        ctk.CTkLabel(dialog, text="Nama Paket").pack(anchor="w", padx=20, pady=(8, 2))
-        e_nama = ctk.CTkEntry(dialog, placeholder_text="Cuci Express")
-        e_nama.pack(fill="x", padx=20)
-
-        ctk.CTkLabel(dialog, text="Jenis Layanan").pack(anchor="w", padx=20, pady=(8, 2))
-        e_jenis = ctk.CTkEntry(dialog, placeholder_text="Kiloan / Satuan")
-        e_jenis.pack(fill="x", padx=20)
-
-        ctk.CTkLabel(dialog, text="Harga per Kg (Rp)").pack(anchor="w", padx=20, pady=(8, 2))
-        e_harga = ctk.CTkEntry(dialog, placeholder_text="10000")
-        e_harga.pack(fill="x", padx=20)
-
-        def proses_simpan():
-            id_p = e_id.get().strip()
-            nama_p = e_nama.get().strip()
-            jenis_p = e_jenis.get().strip() or "Kiloan"
-            try:
-                harga_p = float(e_harga.get().strip())
-                if harga_p <= 0:
-                    raise ValueError
-            except ValueError:
-                messagebox.showwarning("Peringatan", "Harga harus berupa angka > 0.", parent=dialog)
-                return
-
-            if not id_p or not nama_p:
-                messagebox.showwarning("Peringatan", "ID Paket dan Nama Paket wajib diisi.", parent=dialog)
-                return
-
-            if self.paket_model.tambah_paket(id_p, nama_p, jenis_p, harga_p):
-                messagebox.showinfo("Sukses", f"Paket '{nama_p}' berhasil ditambahkan.", parent=dialog)
-                dialog.destroy()
-                self.muat_data_master()
-                self.combo_paket.set(nama_p)
-                self._hitung_total()
-            else:
-                messagebox.showerror("Gagal", "Gagal menambah paket (pastikan ID Paket belum dipakai).", parent=dialog)
-
-        ctk.CTkButton(dialog, text="Simpan Paket", command=proses_simpan).pack(
-            fill="x", padx=20, pady=18
-        )
-
-    # ==================================================================
     # UPDATE & DELETE TRANSAKSI
     # ==================================================================
     def perbarui_transaksi(self) -> None:
@@ -639,7 +551,7 @@ class LaundryView(ctk.CTkFrame):
             )
             return
 
-        nama_pelanggan = self.combo_pelanggan.get().strip()
+        nama_pelanggan = self.entry_pelanggan.get().strip()
         if not nama_pelanggan or nama_pelanggan == "-":
             messagebox.showwarning("Peringatan", "Nama pelanggan tidak boleh kosong.")
             return
@@ -721,77 +633,8 @@ class LaundryView(ctk.CTkFrame):
         else:
             messagebox.showerror("Gagal", "Data transaksi gagal dihapus.")
 
-    def hapus_paket_terpilih(self) -> None:
-        nama_paket = self.combo_paket.get()
-        id_paket = next(
-            (p["id_paket"] for p in self.data_paket_db if p["nama_paket"] == nama_paket),
-            None,
-        )
-        if not id_paket:
-            messagebox.showwarning("Peringatan", "Pilih paket layanan yang valid.")
-            return
-
-        if not messagebox.askyesno(
-            "Konfirmasi Hapus", f"Yakin ingin menghapus paket '{nama_paket}'?"
-        ):
-            return
-
-        if self.paket_model.hapus_paket(id_paket):
-            messagebox.showinfo("Sukses", f"Paket '{nama_paket}' berhasil dihapus.")
-            self.muat_data_master()
-        else:
-            messagebox.showerror(
-                "Gagal",
-                f"Paket '{nama_paket}' gagal dihapus karena masih dipakai di tabel transaksi!",
-            )
-
-    def hapus_pelanggan_terpilih(self) -> None:
-        nama_pelanggan = self.combo_pelanggan.get().strip()
-        pelanggan = next(
-            (
-                p
-                for p in self.data_pelanggan_db
-                if p["nama"].strip().lower() == nama_pelanggan.lower()
-            ),
-            None,
-        )
-        if not pelanggan:
-            messagebox.showwarning("Peringatan", "Pelanggan tidak ditemukan di database.")
-            return
-
-        if not messagebox.askyesno(
-            "Konfirmasi Hapus", f"Yakin ingin menghapus pelanggan '{pelanggan['nama']}'?"
-        ):
-            return
-
-        conn = self.db.get_connection()
-        if not conn:
-            return
-        try:
-            cursor = conn.cursor()
-            cursor.execute(
-                "DELETE FROM pelanggan WHERE id_pelanggan = %s",
-                (pelanggan["id_pelanggan"],),
-            )
-            conn.commit()
-            terhapus = cursor.rowcount > 0
-            cursor.close()
-            conn.close()
-            if terhapus:
-                messagebox.showinfo("Sukses", f"Pelanggan '{pelanggan['nama']}' dihapus.")
-                self.muat_data_master()
-            else:
-                messagebox.showerror("Gagal", "Pelanggan gagal dihapus.")
-        except Exception as e:
-            conn.rollback()
-            conn.close()
-            messagebox.showerror(
-                "Gagal",
-                f"Pelanggan tidak dapat dihapus karena masih memiliki riwayat transaksi!\n({e})",
-            )
-
-    def _isi_kontak(self) -> None:
-        target = self.combo_pelanggan.get().strip().lower()
+    def _isi_kontak_dari_nama(self, nama: str) -> None:
+        target = nama.strip().lower()
         for orang in self.data_pelanggan_db:
             if orang["nama"].strip().lower() == target:
                 telp = orang.get("no_telp") or orang.get("no_telepon") or ""
@@ -802,8 +645,11 @@ class LaundryView(ctk.CTkFrame):
         _isi(self.entry_alamat, "")
 
     def _bersihkan_form(self) -> None:
+        _isi(self.entry_pelanggan, "")
         _isi(self.entry_berat, "")
         _isi(self.entry_selesai, "")
+        _isi(self.entry_telp, "")
+        _isi(self.entry_alamat, "")
         self.label_total.configure(text="Total Biaya: Rp 0")
 
     def _hitung_total(self) -> None:
@@ -817,3 +663,4 @@ class LaundryView(ctk.CTkFrame):
         except ValueError:
             berat = 0
         self.label_total.configure(text=f"Total Biaya: {_rp(berat * harga)}")
+

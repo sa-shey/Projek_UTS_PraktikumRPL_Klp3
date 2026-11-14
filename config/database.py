@@ -1,11 +1,11 @@
-
+﻿
 import mysql.connector
 from mysql.connector import Error
 
 class Database:
     def __init__(self):
         self.host = "localhost"
-        self.db_name = "db_laundry_uas"
+        self.db_name = "db_laundry"
         self.username = "root"
         self.password = ""
         self.port = 3306
@@ -28,3 +28,4 @@ class Database:
         except Error as e:
             print(f"Koneksi Gagal: {e}")
             return None
+
