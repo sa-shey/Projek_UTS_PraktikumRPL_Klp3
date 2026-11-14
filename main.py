@@ -32,18 +32,6 @@ MERAH = "#f43f5e"        # tombol hapus
 # ==================================================================
 # UTILITAS
 # ==================================================================
-
-def main() -> None:
-    terapkan_tema()
-    SplashScreen().mainloop()  # Animasi logo tampil di awal
-
-    try:
-        pengguna = buka_jendela_login()
-    except SystemExit:
-        return
-
-    buka_jendela_utama(pengguna["username"], pengguna["role"])
-
 def terapkan_tema() -> None:
     """Mengatur tampilan terang dan tema warna bawaan."""
     ctk.set_appearance_mode("light")
@@ -159,8 +147,12 @@ def _sidebar(bangunan, pengguna: str, aktif: str):
     return sisi, menu, kartu
 
 
-def buka_jendela_utama(pengguna: str, role: str = "user") -> None:
-    """Menampilkan jendela utama yang memuat dashboard dan transaksi."""
+def buka_jendela_utama(pengguna: str, role: str = "user") -> bool:
+    """Menampilkan jendela utama yang memuat dashboard dan transaksi.
+
+    Mengembalikan True jika pengguna menekan tombol Keluar (logout),
+    dan False jika jendela ditutup dengan tombol X.
+    """
     jendela = ctk.CTk(fg_color=LATAR)
     jendela.title(JUDUL)
     jendela.geometry("1260x780+20+20")
@@ -214,10 +206,19 @@ def buka_jendela_utama(pengguna: str, role: str = "user") -> None:
     menu["Dashboard"].configure(command=lambda: tampilkan("Dashboard"))
     menu["Transaksi Laundry"].configure(
         command=lambda: tampilkan("Transaksi Laundry"))
-    kartu.winfo_children()[-1].configure(command=jendela.destroy)
+
+    # --- Logout: tutup jendela utama lalu kembali ke halaman login ---
+    status = {"logout": False}
+
+    def keluar() -> None:
+        status["logout"] = True
+        jendela.destroy()
+
+    kartu.winfo_children()[-1].configure(command=keluar)
 
     tampilkan("Dashboard")
     jendela.mainloop()
+    return status["logout"]
 
 
 # ==================================================================
@@ -231,13 +232,17 @@ def main() -> None:
     # 2. Tampilkan splash screen animasi saat pertama kali dibuka.
     tampilkan_splash()
 
-    # 3. Login lebih dahulu, baru jendela utama.
-    try:
-        pengguna = buka_jendela_login()
-    except SystemExit:
-        return
+    # 3. Login lebih dahulu, baru jendela utama. Perulangan ini membuat
+    #    tombol Keluar mengembalikan pengguna ke halaman login.
+    while True:
+        try:
+            pengguna = buka_jendela_login()
+        except SystemExit:
+            return
 
-    buka_jendela_utama(pengguna["username"], pengguna["role"])
+        logout = buka_jendela_utama(pengguna["username"], pengguna["role"])
+        if not logout:
+            break
 
 
 if __name__ == "__main__":
