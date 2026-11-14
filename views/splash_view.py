@@ -34,14 +34,14 @@ class SplashScreen(ctk.CTk):
 
         ctk.CTkLabel(
             kartu,
-            text="SIM Laundry",
+            text="SIMO-JL",
             font=("Segoe UI", 20, "bold"),
             text_color="#0f3d38",
         ).pack()
 
         ctk.CTkLabel(
             kartu,
-            text="Memuat Sistem Informasi Manajemen Laundry...",
+            text="Memuat Sistem Informasi Manajemen Operasional Jasa Laundry...",
             font=("Segoe UI", 11),
             text_color="#5f8a84",
         ).pack(pady=(2, 12))
