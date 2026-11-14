@@ -1,79 +1,180 @@
 import mysql.connector
 from config.database import Database
 
+
 class TransaksiModel:
-    def __init__(self):
-        self.db = Database()
+    def __init__(self, db=None):
+        self.db = db or Database()
         self.conn = self.db.get_connection()
         self.table_name = "transaksi_laundry"
 
-    def get_all_transaksi(self):
-        if self.conn:
-            try:
-                cursor = self.conn.cursor(dictionary=True)
-                # Menggunakan JOIN agar nama pelanggan dan nama paket juga bisa terbaca
-                query = f"""
-                    SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket 
-                    FROM {self.table_name} t
-                    JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
-                    JOIN paket_layanan pk ON t.id_paket = pk.id_paket
-                """
-                cursor.execute(query)
-                result = cursor.fetchall()
-                cursor.close()
-                return result
-            except mysql.connector.Error as e:
-                print(f"Error Read Transaksi: {e}")
-                return []
-        return []
+    def _get_conn(self):
+        if self.conn is None or not self.conn.is_connected():
+            self.conn = self.db.get_connection()
+        return self.conn
 
-    def create_transaksi(self, id_pelanggan, id_paket, berat_kg, tgl_terima, tgl_selesai, total_biaya, status_cucian):
-        if self.conn:
-            try:
-                cursor = self.conn.cursor()
-                query = f"""
-                    INSERT INTO {self.table_name} 
-                    (id_pelanggan, id_paket, berat_kg, tgl_terima, tgl_selesai, total_biaya, status_cucian) 
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """
-                val = (id_pelanggan, id_paket, berat_kg, tgl_terima, tgl_selesai, total_biaya, status_cucian)
-                cursor.execute(query, val)
-                self.conn.commit()
-                cursor.close()
-                return True
-            except mysql.connector.Error as e:
-                self.conn.rollback()
-                print(f"Error Create Transaksi: {e}")
+    def get_all_transaksi(self):
+        conn = self._get_conn()
+        if not conn:
+            return []
+        try:
+            cursor = conn.cursor(dictionary=True)
+            query = f"""
+                SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket
+                FROM {self.table_name} t
+                JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
+                JOIN paket_layanan pk ON t.id_paket = pk.id_paket
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+            cursor.close()
+            return result
+        except mysql.connector.Error as e:
+            print(f"Error Read Transaksi: {e}")
+            return []
+
+    def get_transaksi_by_id(self, id_transaksi):
+        conn = self._get_conn()
+        if not conn:
+            return None
+        try:
+            cursor = conn.cursor(dictionary=True)
+            query = f"""
+                SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket
+                FROM {self.table_name} t
+                JOIN pelanggan p ON t.id_pelanggan = p.id_pelanggan
+                JOIN paket_layanan pk ON t.id_paket = pk.id_paket
+                WHERE t.id_transaksi = %s
+            """
+            cursor.execute(query, (id_transaksi,))
+            result = cursor.fetchone()
+            cursor.close()
+            return result
+        except mysql.connector.Error as e:
+            print(f"Error Read Transaksi By ID: {e}")
+            return None
+
+    def create_transaksi(
+        self,
+        id_pelanggan,
+        id_paket,
+        berat_kg,
+        tgl_terima,
+        tgl_selesai,
+        total_biaya,
+        status_cucian,
+    ):
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            cursor = conn.cursor()
+            query = f"""
+                INSERT INTO {self.table_name}
+                (id_pelanggan, id_paket, berat_kg, tgl_terima,
+                 tgl_selesai, total_biaya, status_cucian)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            val = (
+                id_pelanggan,
+                id_paket,
+                berat_kg,
+                tgl_terima,
+                tgl_selesai,
+                total_biaya,
+                status_cucian,
+            )
+            cursor.execute(query, val)
+            conn.commit()
+            cursor.close()
+            return True
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Create Transaksi: {e}")
+            return False
+
+    def update_transaksi(
+        self,
+        id_transaksi,
+        id_pelanggan,
+        id_paket,
+        berat_kg,
+        tgl_terima,
+        tgl_selesai,
+        total_biaya,
+        status_cucian,
+    ):
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            if not self.get_transaksi_by_id(id_transaksi):
                 return False
-        return False
+            cursor = conn.cursor()
+            query = f"""
+                UPDATE {self.table_name}
+                SET id_pelanggan = %s,
+                    id_paket = %s,
+                    berat_kg = %s,
+                    tgl_terima = %s,
+                    tgl_selesai = %s,
+                    total_biaya = %s,
+                    status_cucian = %s
+                WHERE id_transaksi = %s
+            """
+            val = (
+                id_pelanggan,
+                id_paket,
+                berat_kg,
+                tgl_terima,
+                tgl_selesai,
+                total_biaya,
+                status_cucian,
+                id_transaksi,
+            )
+            cursor.execute(query, val)
+            conn.commit()
+            cursor.close()
+            return True
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Update Transaksi: {e}")
+            return False
 
     def update_status(self, id_transaksi, status_cucian):
-        if self.conn:
-            try:
-                cursor = self.conn.cursor()
-                query = f"UPDATE {self.table_name} SET status_cucian = %s WHERE id_transaksi = %s"
-                val = (status_cucian, id_transaksi)
-                cursor.execute(query, val)
-                self.conn.commit()
-                cursor.close()
-                return True
-            except mysql.connector.Error as e:
-                self.conn.rollback()
-                print(f"Error Update Status Transaksi: {e}")
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            if not self.get_transaksi_by_id(id_transaksi):
                 return False
-        return False
+            cursor = conn.cursor()
+            query = (
+                f"UPDATE {self.table_name} "
+                "SET status_cucian = %s WHERE id_transaksi = %s"
+            )
+            cursor.execute(query, (status_cucian, id_transaksi))
+            conn.commit()
+            cursor.close()
+            return True
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Update Status Transaksi: {e}")
+            return False
 
     def delete_transaksi(self, id_transaksi):
-        if self.conn:
-            try:
-                cursor = self.conn.cursor()
-                query = f"DELETE FROM {self.table_name} WHERE id_transaksi = %s"
-                cursor.execute(query, (id_transaksi,))
-                self.conn.commit()
-                cursor.close()
-                return True
-            except mysql.connector.Error as e:
-                self.conn.rollback()
-                print(f"Error Delete Transaksi: {e}")
-                return False
-        return False
+        conn = self._get_conn()
+        if not conn:
+            return False
+        try:
+            cursor = conn.cursor()
+            query = f"DELETE FROM {self.table_name} WHERE id_transaksi = %s"
+            cursor.execute(query, (id_transaksi,))
+            affected = cursor.rowcount
+            conn.commit()
+            cursor.close()
+            return affected > 0
+        except mysql.connector.Error as e:
+            conn.rollback()
+            print(f"Error Delete Transaksi: {e}")
+            return False
