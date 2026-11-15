@@ -1,3 +1,4 @@
+
 import mysql.connector
 from config.database import Database
 
@@ -10,6 +11,7 @@ class TransaksiModel:
     def _get_conn(self):
         return self.db.get_connection()
 
+    # READ: Menampilkan semua transaksi untuk kasir dan manajer
     def get_all_transaksi(self):
         conn = self._get_conn()
         cursor = None
@@ -36,6 +38,48 @@ class TransaksiModel:
                 cursor.close()
             conn.close()
 
+    # READ: Menampilkan transaksi milik pelanggan yang sedang login
+    def get_transaksi_by_user(self, id_user):
+        conn = self._get_conn()
+        cursor = None
+
+        if not conn:
+            return []
+
+        try:
+            cursor = conn.cursor(dictionary=True)
+
+            query = """
+                SELECT
+                    t.id_transaksi,
+                    t.tgl_terima,
+                    t.tgl_selesai,
+                    t.berat_kg,
+                    t.total_biaya,
+                    t.status_cucian,
+                    pk.nama_paket
+                FROM transaksi_laundry t
+                JOIN pelanggan p
+                    ON t.id_pelanggan = p.id_pelanggan
+                JOIN paket_layanan pk
+                    ON t.id_paket = pk.id_paket
+                WHERE p.id_user = %s
+                ORDER BY t.id_transaksi DESC
+            """
+
+            cursor.execute(query, (id_user,))
+            return cursor.fetchall()
+
+        except mysql.connector.Error as e:
+            print(f"Error transaksi pelanggan: {e}")
+            return []
+
+        finally:
+            if cursor is not None:
+                cursor.close()
+            conn.close()
+
+    # READ: Menampilkan transaksi berdasarkan ID
     def get_transaksi_by_id(self, id_transaksi):
         conn = self._get_conn()
         cursor = None
@@ -55,6 +99,7 @@ class TransaksiModel:
                 cursor.close()
             conn.close()
 
+    # CREATE: Menambahkan transaksi baru
     def create_transaksi(
         self,
         id_pelanggan,
@@ -98,6 +143,7 @@ class TransaksiModel:
                 cursor.close()
             conn.close()
 
+    # UPDATE: Memperbarui transaksi
     def update_transaksi(
         self,
         id_transaksi,
@@ -152,6 +198,7 @@ class TransaksiModel:
                 cursor.close()
             conn.close()
 
+    # UPDATE: Memperbarui status cucian
     def update_status(self, id_transaksi, status_cucian):
         conn = self._get_conn()
         cursor = None
@@ -179,6 +226,7 @@ class TransaksiModel:
                 cursor.close()
             conn.close()
 
+    # DELETE: Menghapus transaksi
     def delete_transaksi(self, id_transaksi):
         conn = self._get_conn()
         cursor = None
