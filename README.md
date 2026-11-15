@@ -1,4 +1,3 @@
-\
 # SIM Laundry
 
 Sistem Informasi Manajemen Operasional Jasa Laundry adalah aplikasi desktop Python untuk membantu pengelolaan pelanggan, paket layanan, transaksi laundry, serta pemantauan status cucian.
@@ -42,7 +41,6 @@ Projek_UTS_PraktikumRPL_Klp3/
 ├── .github/workflows/
 │   └── ci_pipeline.yml
 ├── main.py
-├── pytest.ini
 └── requirements.txt
 ```
 
