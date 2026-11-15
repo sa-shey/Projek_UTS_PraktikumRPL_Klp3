@@ -1,6 +1,7 @@
 import re
 import customtkinter as ctk
 import tkinter.messagebox as messagebox
+from pathlib import Path
 
 from models.user_model import UserModel
 from views.login_view import LoginView
@@ -20,6 +21,12 @@ class AuthController:
         self.root.resizable(False, False)
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
+
+        # Memasang logo sebagai ikon jendela aplikasi
+        path_logo = (Path(__file__).resolve().parent.parent / "assets" / "logo.ico")
+
+        if path_logo.exists():
+            self.root.iconbitmap(str(path_logo))
 
         self.view = LoginView(self.root)
         self.view.grid(row=0, column=0, sticky="nsew", padx=16, pady=16)
